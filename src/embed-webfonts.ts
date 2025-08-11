@@ -202,7 +202,8 @@ async function parseWebFontRules<T extends HTMLElement>(
   return getWebFontRules(cssRules)
 }
 
-function normalizeFontFamily(font: string) {
+function normalizeFontFamily(font: string | undefined) {
+  if (!font) return undefined
   return font.trim().replace(/["']/g, '')
 }
 
@@ -211,8 +212,9 @@ function getUsedFonts(node: HTMLElement) {
   function traverse(node: HTMLElement) {
     const fontFamily =
       node.style.fontFamily || getComputedStyle(node).fontFamily
-    fontFamily.split(',').forEach((font) => {
-      fonts.add(normalizeFontFamily(font))
+    fontFamily.split(',').forEach((font: string | undefined) => {
+      const normalizedFont = normalizeFontFamily(font)
+      if (normalizedFont) fonts.add(normalizedFont)
     })
 
     Array.from(node.children).forEach((child) => {
@@ -234,7 +236,7 @@ export async function getWebFontCSS<T extends HTMLElement>(
   const cssTexts = await Promise.all(
     rules
       .filter((rule) =>
-        usedFonts.has(normalizeFontFamily(rule.style.fontFamily)),
+        usedFonts.has(normalizeFontFamily(rule.style.fontFamily) || ''),
       )
       .map((rule) => {
         const baseUrl = rule.parentStyleSheet
